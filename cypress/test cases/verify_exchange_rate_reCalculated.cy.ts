@@ -8,5 +8,7 @@ describe('Test suite 5', function() {
 
         cryptoexchange.callWebURL()
         cryptoexchange.reCalculateConversionAmountWhenSwaped()
+        //cryptoexchange.callAPItoCalculateExchangeRate('swap_crypto', 'bitcoin', 'ethereum')
+        //cryptoexchange.callAPItoCalculateExchangeRate('buy_crypto', 'ethereum', 'bitcoin')
     })
 })
