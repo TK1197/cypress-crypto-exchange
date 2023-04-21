@@ -1,4 +1,5 @@
 ///<reference types="Cypress" />
+import { stringify } from 'querystring'
 import crypto_exchange_objects from '../object_repository/crypto_exchange_objects'
 
 const cryptoExchange_objects = new crypto_exchange_objects()
@@ -9,6 +10,8 @@ const Timenow12hours = dayjs().format("hh:mm:ss")
 let available_crypto: string[] = ['Bitcoin', 'Ethereum', 'Tether', 'Cardano', 'Dogecoin', 'Solana']
 
 class crypto_exchange {
+
+    exchange_rate_of_crypto_swap: any; exchange_rates_of_crypto_buy: any
 
     callWebURL() {
 
@@ -59,106 +62,109 @@ class crypto_exchange {
         cryptoExchange_objects.clickDropdownlist('buy').click()
         cryptoExchange_objects.verifyDropdownlist('buy', available_crypto[5]).click()
         cryptoExchange_objects.verifyBuyLabel().should('have.text', 'sol to buy')
+
+        //input value into text field
+        cryptoExchange_objects.inputTextField('swap').type('1')
     }
 
     calculateCryptoExchangeRate() {
 
-        cryptoExchange_objects.inputTextField('swap').type('1500')
+        cryptoExchange_objects.inputTextField('swap').type('3')
         cryptoExchange_objects.clickDropdownlist('buy').click()
         cy.scrollTo('top')
         cryptoExchange_objects.verifyDropdownlist('buy', available_crypto[1]).click()
-        this.callAPItoCalculateExchangeRate('swap_crypto', available_crypto[1].toLowerCase(), available_crypto[2].toLowerCase())
+        this.callAPItoCalculateExchangeRate('swap_crypto', available_crypto[0].toLowerCase(), available_crypto[1].toLowerCase())
     }
 
     reCalculateConversionAmountWhenSwaped() {
 
         this.calculateCryptoExchangeRate()
-        //maybe click on swap button or re-enter amount
-        this.callAPItoCalculateExchangeRate('buy crypto', available_crypto[2].toLowerCase(), available_crypto[1].toLowerCase())
+        cryptoExchange_objects.inputTextField('swap').type('5')
+        cryptoExchange_objects.clickOnSwapButton().click()
+        this.callAPItoCalculateExchangeRate('buy_crypto', 'defichain', available_crypto[0].toLowerCase())
     }
 
     callAPItoCalculateExchangeRate(entry: string, cryptoToswap: string, cryptoToBuy: string) {
 
-        let exchange_rate_of_crypto_swap: any, exchange_rates_of_crypto_buy: any, exchange_rates_of_current_crypto: string
+        //2 API call to get exchange rate for swap & buy crypto
+        cy.request({
 
-        //API call to get exchange rate for swap crypto
-        it('La Coco Swap Crypto Exchange Rate', function() {
+            method: 'GET', url: `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoToswap}&vs_currencies=usd`
 
-            cy.request({
+        }).then(function (response) {
 
-                method: 'GET', url: `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoToswap}&vs_currencies=usd`
-    
-            }).then(function (response) {
+            switch (cryptoToswap) {
 
-                switch (cryptoToswap) {
+                case 'bitcoin':
 
-                    case 'bitcoin':
-    
-                        exchange_rate_of_crypto_swap = response.body.bitcoin.usd
-                        break
-    
-                    case 'ethereum':
-    
-                        exchange_rate_of_crypto_swap = response.body.ethereum.usd
-                        break
-    
-                    case 'Tether':
-                        exchange_rate_of_crypto_swap = response.body.Tether.usd
-                        break
-                }
-            })
-        })
+                    this.exchange_rate_of_crypto_swap = response.body.bitcoin.usd
+                    break
 
-        //API call to get exchange rate for buy crypto
-        it('La Coco Buy Crypto Exchange Rate', function() {
+                case 'ethereum':
+
+                    this.exchange_rate_of_crypto_swap = response.body.ethereum.usd
+                    break
+
+                case 'tether':
+                    this.exchange_rate_of_crypto_swap = response.body.tether.usd
+                    break
+
+                case 'defichain':
+                    this.exchange_rate_of_crypto_swap = response.body.defichain.usd
+                    break
+            }
 
             cy.request({
 
                 method: 'GET', url: `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoToBuy}&vs_currencies=usd`
-    
+
             }).then(function (response) {
 
                 switch (cryptoToBuy) {
 
                     case 'bitcoin':
-    
-                        exchange_rates_of_crypto_buy = response.body.bitcoin.usd
+
+                        this.exchange_rates_of_crypto_buy = response.body.bitcoin.usd
                         break
-    
+
                     case 'ethereum':
-    
-                        exchange_rates_of_crypto_buy = response.body.ethereum.usd
+
+                        this.exchange_rates_of_crypto_buy = response.body.ethereum.usd
                         break
-    
-                    case 'Tether':
-                        exchange_rates_of_crypto_buy = response.body.Tether.usd
+
+                    case 'tether':
+                        this.exchange_rates_of_crypto_buy = response.body.tether.usd
                         break
+                }
+
+                if (entry == 'swap_crypto') {
+
+                    let exchange_rates_of_current_crypto = (this.exchange_rate_of_crypto_swap / this.exchange_rates_of_crypto_buy).toPrecision(4)
+
+                    cy.log(this.exchange_rate_of_crypto_swap)
+                    cy.log(this.exchange_rates_of_crypto_buy)
+
+                    cryptoExchange_objects.inputTextField('buy').then($value => {
+
+                        const textValue = $value.text()
+                        expect(textValue).to.equal(exchange_rates_of_current_crypto)
+                    })
+
+                } else if (entry == 'buy_crypto') {
+
+                    let exchange_rates_of_current_crypto = (this.exchange_rates_of_crypto_buy / this.exchange_rate_of_crypto_swap).toPrecision(1)
+
+                    cy.log(this.exchange_rate_of_crypto_swap)
+                    cy.log(this.exchange_rates_of_crypto_buy)
+
+                    cryptoExchange_objects.inputTextField('buy').then($value => {
+
+                        const textValue = $value.text()
+                        expect(textValue).to.equal(exchange_rates_of_current_crypto)
+                    })
                 }
             })
         })
-
-        if (entry == 'swap_crypto') {
-
-            exchange_rates_of_current_crypto = (exchange_rate_of_crypto_swap / exchange_rates_of_crypto_buy).toPrecision(4)
-
-            cy.get('[data-test-id="hero__headline"]').then($value => {
-
-                const textValue = $value.text()
-                expect(textValue.includes(exchange_rates_of_current_crypto)).to.be.true
-                //cy.wrap(textValue).as('wrapValue')
-            })
-
-        }else if (entry == 'buy_crypto') {
-
-            exchange_rates_of_current_crypto = (exchange_rates_of_crypto_buy / exchange_rate_of_crypto_swap).toPrecision(4)
-
-            cy.get('[data-test-id="hero__headline"]').then($value => {
-
-                const textValue = $value.text()
-                expect(textValue.includes(exchange_rates_of_current_crypto)).to.be.true
-                //cy.wrap(textValue).as('wrapValue')
-            })
-        }
     }
 }
 

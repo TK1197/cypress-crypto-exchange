@@ -44,6 +44,16 @@ class crypto_exchange_objects{
 
         return cy.get(`[data-testid="${text}-input"]`)
     }
+
+    getExchangeRate(){
+
+        return cy.get('[data-testid="exchange-rate"]')
+    }
+
+    clickOnSwapButton(){
+
+        return cy.get('[class="h-10 w-10 text-cyan-600 p-2 rounded-full bg-sky-200 bg-opacity-60 cursor-pointer"]')
+    }
 }
 
 export default crypto_exchange_objects;

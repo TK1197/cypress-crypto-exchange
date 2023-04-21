@@ -7,6 +7,6 @@ describe('Test suite 5', function() {
     it('La Coco Crypto - ReCalculate when amount changed', function() {
 
         cryptoexchange.callWebURL()
-        cryptoexchange.calculateCryptoExchangeRate()
+        cryptoexchange.reCalculateConversionAmountWhenSwaped()
     })
 })
