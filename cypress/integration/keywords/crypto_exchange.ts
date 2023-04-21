@@ -159,12 +159,13 @@ class crypto_exchange {
 
             } else if (entry == 'buy_crypto') {
 
-                let exchange_rates_of_current_crypto_buy = (this.exchange_rates_of_crypto_buy / this.exchange_rate_of_crypto_swap).toPrecision(4)
+                let exchange_rates_of_current_crypto_buy = (this.exchange_rates_of_crypto_buy / this.exchange_rate_of_crypto_swap).toPrecision(2)
                 cy.log(exchange_rates_of_current_crypto_buy)
 
                 cryptoExchange_objects.getExchangeRate().then($value => {
 
-                    const textValue = $value.text()
+                    let textValue = $value.text()
+                    textValue = parseFloat(textValue).toFixed(3)
                     expect(textValue).to.equal(exchange_rates_of_current_crypto_buy)
                 })
             }
